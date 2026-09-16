@@ -53,10 +53,6 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
   const handleSingleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (imageUrls.length >= STORE_CONFIG.maxImagesPerProduct) {
-      toast.error(`Maximum ${STORE_CONFIG.maxImagesPerProduct} images allowed`);
-      return;
-    }
     
     setIsUploadingImage(true);
     const t = toast.loading('Uploading image...');
@@ -544,7 +540,7 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
                 className="w-full border p-2.5 rounded-lg text-black placeholder:text-neutral-500 min-h-[100px]" placeholder="Description" />
               
               <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
-                <label className="block text-sm font-medium text-black mb-3">Product Images (Max {STORE_CONFIG.maxImagesPerProduct})</label>
+                <label className="block text-sm font-medium text-black mb-3">Product Images</label>
                 <div className="flex flex-wrap gap-3 mb-3">
                   {imageUrls.map((url, i) => (
                     <div key={i} className="relative group w-20 h-20 border bg-white rounded-lg overflow-hidden shadow-sm">
@@ -558,19 +554,17 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
                       {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-0.5">Primary</span>}
                     </div>
                   ))}
-                  {imageUrls.length < STORE_CONFIG.maxImagesPerProduct && (
-                    <label className="w-20 h-20 border-2 border-dashed border-neutral-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-100 hover:border-brand transition-colors bg-white">
-                      {isUploadingImage ? (
-                        <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <>
-                          <Plus className="w-6 h-6 text-neutral-400 mb-1" />
-                          <span className="text-[10px] text-neutral-500 font-medium">Add Image</span>
-                        </>
-                      )}
-                      <input type="file" accept="image/*" onChange={handleSingleImageUpload} className="hidden" disabled={isUploadingImage} />
-                    </label>
-                  )}
+                  <label className="w-20 h-20 border-2 border-dashed border-neutral-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-100 hover:border-brand transition-colors bg-white">
+                    {isUploadingImage ? (
+                      <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <Plus className="w-6 h-6 text-neutral-400 mb-1" />
+                        <span className="text-[10px] text-neutral-500 font-medium">Add Image</span>
+                      </>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleSingleImageUpload} className="hidden" disabled={isUploadingImage} />
+                  </label>
                 </div>
               </div>
 
