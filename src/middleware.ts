@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // 1. IP Allowlisting Check (Applies to both /admin and /login)
-  if (path.startsWith('/admin') || path.startsWith('/login')) {
+  // 1. IP Allowlisting Check (Applies to both admin and login)
+  if (path.startsWith('/omcreationadminpafe2021222324') || path.startsWith('/omcreationloginpafe2021222324')) {
     const allowedIps = process.env.ALLOWED_IPS;
     
     if (allowedIps) {
@@ -28,13 +28,13 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 2. Auth Cookie Check (Applies only to /admin)
-  if (path.startsWith('/admin')) {
+  // 2. Auth Cookie Check (Applies only to admin)
+  if (path.startsWith('/omcreationadminpafe2021222324')) {
     const adminSession = request.cookies.get('admin_session');
 
-    // If there is no session, redirect to the login page
+    // If there is no session, redirect to the login page (or homepage to be stealthy)
     if (!adminSession || adminSession.value !== 'true') {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/', request.url));
     }
   }
 
@@ -44,5 +44,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Run middleware on admin routes and login route
-  matcher: ['/admin/:path*', '/admin', '/login'],
+  matcher: ['/omcreationadminpafe2021222324/:path*', '/omcreationadminpafe2021222324', '/omcreationloginpafe2021222324'],
 };

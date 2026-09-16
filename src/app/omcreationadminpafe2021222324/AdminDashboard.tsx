@@ -47,7 +47,7 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
   const handleLogout = async () => {
     await logoutAdmin();
     toast.success('Logged out successfully');
-    router.push('/login');
+    router.push('/omcreationloginpafe2021222324');
   };
 
   const handleSingleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

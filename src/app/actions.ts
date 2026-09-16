@@ -96,7 +96,7 @@ export async function addCategory(name: string) {
   const id = 'c' + Math.random().toString(36).substr(2, 9);
   await supabase.from('Category').insert([{ id, name }]);
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
 
 export async function deleteCategory(id: string) {
@@ -104,7 +104,7 @@ export async function deleteCategory(id: string) {
   await supabase.from('Product').delete().eq('categoryId', id);
   await supabase.from('Category').delete().eq('id', id);
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
 
 export async function addProduct(data: { sku: string; name: string; description: string; imageUrl: string; categoryId: string; attributes?: any }) {
@@ -112,21 +112,21 @@ export async function addProduct(data: { sku: string; name: string; description:
   const id = 'p' + Math.random().toString(36).substr(2, 9);
   await supabase.from('Product').insert([{ id, ...data }]);
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
 
 export async function updateProduct(id: string, data: { sku: string; name: string; description: string; imageUrl: string; categoryId: string; attributes?: any }) {
   await checkAuth();
   await supabase.from('Product').update(data).eq('id', id);
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
 
 export async function deleteProduct(id: string) {
   await checkAuth();
   await supabase.from('Product').delete().eq('id', id);
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
 
 export async function bulkAddProducts(items: { sku: string; name: string; imageUrl: string; categoryName: string; attributes?: any }[]) {
@@ -168,7 +168,7 @@ export async function bulkAddProducts(items: { sku: string; name: string; imageU
     }
 
     revalidatePath('/');
-    revalidatePath('/admin');
+    revalidatePath('/omcreationadminpafe2021222324');
     
     return { 
       success: true, 
@@ -187,7 +187,7 @@ export async function addFieldOption(fieldKey: string, value: string) {
   const id = 'o' + Math.random().toString(36).substr(2, 9);
   await supabase.from('FieldOption').insert([{ id, fieldKey, value }]);
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
 
 export async function deleteFieldOption(id: string, fieldKey: string, value: string) {
@@ -207,5 +207,5 @@ export async function deleteFieldOption(id: string, fieldKey: string, value: str
   }
 
   revalidatePath('/');
-  revalidatePath('/admin');
+  revalidatePath('/omcreationadminpafe2021222324');
 }
