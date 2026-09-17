@@ -300,7 +300,12 @@ export default function CatalogueClient({
                 <ProductCard 
                   key={product.id} 
                   product={product} 
-                  onInquire={() => setInquiryProduct(product)}
+                  onInquire={() => {
+                    // Bypass InquiryModal for this client
+                    const message = `I want to know more about ${product.sku} of saree`;
+                    const url = `https://wa.me/${STORE_CONFIG.whatsappNumber}?text=${encodeURIComponent(message)}`;
+                    window.open(url, '_blank');
+                  }}
                   onAdd={() => handleAddToCartClick(product)}
                   onImageClick={() => setZoomedProduct(product)}
                   isInCart={cart.some(item => item.product.id === product.id)}
