@@ -51,7 +51,7 @@ export interface StoreConfig {
 export const STORE_CONFIG: StoreConfig = {
   storeName: "Om Creation",
   themeColor: "#9c5c41",
-  whatsappNumber: "916353206813",
+  whatsappNumber: "919510072745",
   maxImagesPerProduct: 5,
   customFields: [
     {
