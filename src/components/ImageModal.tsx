@@ -53,8 +53,9 @@ export default function ImageModal({ product, onClose }: ImageModalProps) {
         <TransformWrapper
           key={currentIndex} // Reset zoom on image change
           initialScale={1}
-          minScale={0.5}
+          minScale={1}
           maxScale={5}
+          centerZoomedOut={true}
           centerOnInit={true}
           wheel={{ step: 0.1 }}
           doubleClick={{ step: 0.5 }}
