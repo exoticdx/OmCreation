@@ -2,8 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import { addCategory, deleteCategory, addProduct, updateProduct, deleteProduct, bulkAddProducts, logoutAdmin, uploadImageToR2, addFieldOption, deleteFieldOption } from '../actions';
-import { Trash2, Plus, Upload, Download, AlertCircle, LogOut, X, Edit } from 'lucide-react';
-import Papa from 'papaparse';
+import { Trash2, Plus, Upload, Download, AlertCircle, LogOut, X, Edit, Link as LinkIcon, Copy } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import toast from 'react-hot-toast';
 import { STORE_CONFIG } from '@/config/store.config';
 import { useRouter } from 'next/navigation';
@@ -263,89 +263,113 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
   };
 
   const downloadTemplate = () => {
-    const customHeaders = STORE_CONFIG.customFields.map(f => f.label).join(',');
-    const customValues = STORE_CONFIG.customFields.map(() => '').join(',');
-    
-    const csvContent = `data:text/csv;charset=utf-8,SKU,Name,Image URL,Category${customHeaders ? ',' + customHeaders : ''}\nEX-001,Gold Plated Necklace,https://example.com/image.jpg,Necklaces${customValues ? ',' + customValues : ''}`;
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "product_upload_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    toast.success('Template downloaded');
+    window.location.href = '/api/export-template';
+    toast.success('Downloading Excel template...');
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    const t = toast.loading('Parsing CSV...');
+    const t = toast.loading('Parsing Excel file...');
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async function(results) {
-        try {
-          const items: { sku: string; name: string; imageUrl: string; categoryName: string; attributes: any }[] = [];
-          
-          for (let i = 0; i < results.data.length; i++) {
-            const row: any = results.data[i];
-            const sku = row['SKU']?.trim();
-            const name = row['Name']?.trim();
-            const categoryName = row['Category']?.trim();
-            const imageUrl = row['Image URL']?.trim() || '';
-
-            if (!sku || !name || !categoryName) {
-              throw new Error(`Row ${i + 2} missing required fields (SKU, Name, Category).`);
-            }
-            
-            // Extract custom attributes based on STORE_CONFIG
-            const attributes: any = {};
-            STORE_CONFIG.customFields.forEach(field => {
-              const val = row[field.label]?.trim();
-              if (val) {
-                if (field.type === 'number') {
-                  attributes[field.key] = Number(val);
-                } else if (field.type === 'boolean') {
-                  attributes[field.key] = val.toLowerCase() === 'true' || val.toLowerCase() === 'yes' || val === '1';
-                } else {
-                  attributes[field.key] = val;
-                }
-              }
-            });
-
-            items.push({ sku, name, categoryName, imageUrl, attributes });
-          }
-
-          if (items.length === 0) throw new Error("The CSV file is empty.");
-
-          toast.loading('Uploading products...', { id: t });
-          const result = await bulkAddProducts(items);
-          
-          if (result.success) {
-            toast.success(`Added ${result.addedProducts} products, created ${result.newCategoriesCount} categories!`, { id: t, duration: 5000 });
-            if (result.skippedProducts && result.skippedProducts > 0) {
-               setTimeout(() => toast(`Skipped ${result.skippedProducts} duplicate SKUs`, { icon: 'ℹ️' }), 1000);
-            }
-          } else {
-            toast.error(result.error || 'Failed to upload.', { id: t });
-          }
-        } catch (err: any) {
-          toast.error(err.message, { id: t });
-        } finally {
-          setIsUploading(false);
-          if (fileInputRef.current) fileInputRef.current.value = '';
-        }
-      },
-      error: function(err) {
-        toast.error('Failed to parse CSV file.', { id: t });
-        setIsUploading(false);
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      const worksheet = workbook.getWorksheet('Products');
+      
+      if (!worksheet) {
+        throw new Error("Could not find 'Products' sheet in the Excel file.");
       }
-    });
+
+      const headers: Record<number, string> = {};
+      worksheet.getRow(1).eachCell((cell, colNumber) => {
+        headers[colNumber] = cell.value?.toString().trim() || '';
+      });
+
+      const items: any[] = [];
+      
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // skip header
+
+        const rowData: Record<string, any> = {};
+        row.eachCell((cell, colNumber) => {
+          const headerName = headers[colNumber];
+          if (headerName) {
+            // Check if it's a hyperlink or just value
+            if (cell.type === ExcelJS.ValueType.Hyperlink) {
+              rowData[headerName] = cell.hyperlink;
+            } else if (cell.value && typeof cell.value === 'object' && 'text' in cell.value) {
+              rowData[headerName] = cell.value.text; // Sometimes RichText or formula fallback
+            } else {
+              rowData[headerName] = cell.value?.toString().trim();
+            }
+          }
+        });
+
+        const sku = rowData['SKU'];
+        const name = rowData['Title'];
+        const categoryName = rowData['Category'];
+        const price = rowData['Price'] ? Number(rowData['Price']) : undefined;
+        const description = rowData['Description'] || '';
+        
+        // Extract up to 5 image URLs
+        const gallery = [];
+        for (let i = 1; i <= 5; i++) {
+          const imgUrl = rowData[`Image URL ${i}`];
+          if (imgUrl) gallery.push(imgUrl);
+        }
+        
+        const imageUrl = gallery.length > 0 ? gallery[0] : '';
+
+        if (!sku || !name || !categoryName) {
+          // If the row is completely empty, skip it. If partially filled, throw error.
+          if (!sku && !name && !categoryName) return;
+          throw new Error(`Row ${rowNumber} missing required fields (SKU, Title, Category).`);
+        }
+        
+        const attributes: any = {};
+        if (gallery.length > 1) {
+          attributes.gallery = gallery.slice(1);
+        }
+
+        STORE_CONFIG.customFields.forEach(field => {
+          const val = rowData[`Attr: ${field.label}`];
+          if (val) {
+            if (field.type === 'number') {
+              attributes[field.key] = Number(val);
+            } else if (field.type === 'boolean') {
+              attributes[field.key] = val.toLowerCase() === 'true' || val.toLowerCase() === 'yes' || val === '1';
+            } else {
+              attributes[field.key] = val;
+            }
+          }
+        });
+
+        items.push({ sku, name, categoryName, imageUrl, attributes, price, description });
+      });
+
+      if (items.length === 0) throw new Error("The Excel file is empty.");
+
+      toast.loading('Uploading products...', { id: t });
+      const result = await bulkAddProducts(items);
+      
+      if (result.success) {
+        toast.success(`Added ${result.addedProducts} products, created ${result.newCategoriesCount} categories!`, { id: t, duration: 5000 });
+        if (result.skippedProducts && result.skippedProducts > 0) {
+           setTimeout(() => toast(`Skipped ${result.skippedProducts} duplicate SKUs`, { icon: 'ℹ️' }), 1000);
+        }
+      } else {
+        toast.error(result.error || 'Failed to upload.', { id: t });
+      }
+    } catch (err: any) {
+      toast.error(err.message, { id: t });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -438,34 +462,85 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
         )}
 
         {activeTab === 'bulk' && (
-          <div className="max-w-3xl mx-auto mt-4">
+          <div className="max-w-3xl mx-auto mt-4 space-y-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-black flex items-center"><Upload className="w-6 h-6 mr-3 text-brand"/> CSV Bulk Upload</h2>
+                <h2 className="text-2xl font-semibold text-black flex items-center"><Upload className="w-6 h-6 mr-3 text-brand"/> Excel Bulk Upload</h2>
                 <button onClick={downloadTemplate} className="text-sm flex items-center bg-neutral-100 px-3 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-200 font-medium transition-colors">
-                  <Download className="w-4 h-4 mr-2" /> Download Template
+                  <Download className="w-4 h-4 mr-2" /> Download Excel Template
                 </button>
               </div>
               
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-amber-800">
-                  <strong>Instructions:</strong> Upload a CSV file to add hundreds of products at once. If a Category listed in the CSV does not exist, it will be automatically created. Existing SKUs will be safely skipped.
+                  <strong>Instructions:</strong> Download the Excel template, fill it out, and upload it back here to add hundreds of products at once. Categories and Custom Options appear as dropdowns in the template. Existing SKUs will be safely skipped.
                 </p>
               </div>
 
               <div className="border-2 border-dashed border-neutral-300 rounded-xl p-8 text-center bg-neutral-50 hover:bg-neutral-100 transition-colors relative">
                 <input 
                   type="file" 
-                  accept=".csv"
+                  accept=".xlsx"
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <Upload className="w-10 h-10 text-neutral-400 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-black mb-1">Drop your CSV file here</h3>
-                <p className="text-sm text-neutral-500">or click to browse</p>
+                <h3 className="text-lg font-medium text-black mb-1">Drop your Excel file here</h3>
+                <p className="text-sm text-neutral-500">or click to browse (.xlsx)</p>
                 {isUploading && <div className="mt-4 text-sm font-medium text-amber-600 bg-amber-100 inline-block px-3 py-1 rounded-full animate-pulse">Parsing and Uploading...</div>}
               </div>
+            </div>
+
+            {/* Image URL Generator */}
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-black flex items-center"><LinkIcon className="w-6 h-6 mr-3 text-brand"/> Image URL Generator</h2>
+                <p className="text-sm text-neutral-500 mt-2">Upload images here to instantly generate public URLs. You can copy and paste these URLs directly into your Bulk Upload Excel sheet.</p>
+              </div>
+
+              <div className="border-2 border-dashed border-neutral-300 rounded-xl p-8 text-center bg-neutral-50 hover:bg-neutral-100 transition-colors relative mb-6">
+                <input 
+                  type="file" 
+                  multiple
+                  accept="image/*"
+                  onChange={handleGenerateUrls}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isGeneratingUrls}
+                />
+                <Upload className="w-10 h-10 text-neutral-400 mx-auto mb-3" />
+                <h3 className="text-lg font-medium text-black mb-1">Upload Images to Generate URLs</h3>
+                <p className="text-sm text-neutral-500">Select multiple images at once</p>
+                {isGeneratingUrls && <div className="mt-4 text-sm font-medium text-brand bg-brand/10 inline-block px-3 py-1 rounded-full animate-pulse">Uploading and Generating URLs...</div>}
+              </div>
+
+              {generatedUrls.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold text-black">Generated URLs</h3>
+                    <button onClick={() => setGeneratedUrls([])} className="text-sm text-red-500 hover:text-red-700">Clear All</button>
+                  </div>
+                  {generatedUrls.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-3 bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                      <img src={item.url} alt="Preview" className="w-10 h-10 object-cover rounded shadow-sm border border-neutral-200" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-black truncate mb-1">{item.name}</p>
+                        <input type="text" readOnly value={item.url} className="w-full bg-white border border-neutral-300 text-xs px-2 py-1 rounded text-neutral-600 focus:outline-none" />
+                      </div>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.url);
+                          toast.success('URL Copied to clipboard!');
+                        }} 
+                        className="p-2 bg-white border border-neutral-300 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-black transition-colors shrink-0"
+                        title="Copy URL"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
