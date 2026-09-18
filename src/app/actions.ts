@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Initialize Cloudflare R2 Client
 // These env vars will be needed in Vercel
@@ -208,4 +209,23 @@ export async function deleteFieldOption(id: string, fieldKey: string, value: str
 
   revalidatePath('/');
   revalidatePath('/omcreationadminpafe2021222324');
+}
+
+export async function getUploadUrl(fileName: string, fileType: string) {
+  await checkAuth();
+  const bucketName = process.env.R2_BUCKET_NAME;
+  const publicDomain = process.env.R2_PUBLIC_DOMAIN;
+  if (!bucketName || !publicDomain) {
+    throw new Error('R2 missing');
+  }
+  const fileExt = fileName.split('.').pop() || 'jpg';
+  const newFileName = "product_$(Math.random().toString(36).substring(2, 15))_$(Date.now()).$(fileExt)";
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: newFileName,
+    ContentType: fileType,
+  });
+  const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 });
+  const finalUrl = "$(publicDomain.replace(/\/$/, ''))/$(newFileName)";
+  return { success: true, uploadUrl, finalUrl };
 }

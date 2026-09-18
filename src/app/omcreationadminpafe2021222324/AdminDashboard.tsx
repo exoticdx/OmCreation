@@ -61,14 +61,28 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
       const uploadedUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await uploadImageToR2(formData);
         
-        if (res.success && res.url) {
-          uploadedUrls.push(res.url);
+        // 1. Get presigned URL from server (bypasses payload limits!)
+        const { getUploadUrl } = await import('@/app/actions');
+        const res = await getUploadUrl(file.name, file.type);
+        
+        if (res.success && res.uploadUrl && res.finalUrl) {
+          // 2. Upload file directly from browser to Cloudflare R2
+          const uploadRes = await fetch(res.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream',
+            },
+          });
+          
+          if (uploadRes.ok) {
+            uploadedUrls.push(res.finalUrl);
+          } else {
+            toast.error(`Cloudflare rejected ${file.name}`);
+          }
         } else {
-          toast.error(`Failed to upload ${file.name}: ${res.error}`);
+          toast.error(`Failed to get upload URL for ${file.name}`);
         }
       }
       
