@@ -176,7 +176,7 @@ export default function CatalogueClient({
   return (
     <div className="pb-24 print:pb-0">
       {/* Navbar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200 shadow-sm px-4 md:px-8 flex items-center justify-between h-[72px] md:h-[80px]">
+      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200 shadow-sm px-4 md:px-8 flex items-center justify-between h-[72px] md:h-[80px] print:hidden">
         <div className="flex items-center space-x-3 md:space-x-4">
           <img src="/Logo.png" alt="RC Imitation Jewellery Logo" className="h-10 md:h-12 w-auto object-contain" />
           <h1 className="text-lg md:text-xl font-bold text-brand tracking-tight font-serif leading-tight">{STORE_CONFIG.storeName}</h1>
@@ -316,36 +316,53 @@ export default function CatalogueClient({
         )}
       </div>
 
-      {/* Print-Only Product Grid */}
-      <div className="hidden print:block p-8 max-w-7xl mx-auto">
-        {printGroups.sortedCategories.length === 0 ? (
-          <div className="text-center py-20 text-black">No products to print.</div>
-        ) : (
-          printGroups.sortedCategories.map(cat => (
-            <div key={cat} className="mb-12 print:break-inside-avoid">
-              {/* Category Header with Line Separator */}
-              <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-2xl font-bold text-brand whitespace-nowrap">{cat}</h2>
-                <div className="h-px bg-neutral-300 flex-grow mt-1"></div>
+      {/* Print-Only Product Grid with Repeating Header */}
+      <table className="hidden print:table w-full max-w-7xl mx-auto">
+        <thead className="table-header-group">
+          <tr>
+            <td className="pb-6 pt-4">
+              <div className="flex items-center space-x-4">
+                <img src="/Logo.png" alt="Logo" className="h-12 w-auto object-contain" />
+                <h1 className="text-xl font-bold text-brand tracking-tight font-serif leading-tight">{STORE_CONFIG.storeName}</h1>
               </div>
-              
-              {/* Category Products */}
-              <div className="grid grid-cols-3 gap-6">
-                {printGroups.grouped[cat].map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onInquire={() => {}}
-                    onAdd={() => {}}
-                    onImageClick={() => {}}
-                    isInCart={false}
-                  />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+              <div className="h-px bg-neutral-200 w-full mt-4"></div>
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              {printGroups.sortedCategories.length === 0 ? (
+                <div className="text-center py-20 text-black">No products to print.</div>
+              ) : (
+                printGroups.sortedCategories.map(cat => (
+                  <div key={cat} className="mb-12 print:break-inside-avoid">
+                    {/* Category Header with Line Separator */}
+                    <div className="flex items-center gap-4 mb-6">
+                      <h2 className="text-2xl font-bold text-brand whitespace-nowrap">{cat}</h2>
+                      <div className="h-px bg-neutral-300 flex-grow mt-1"></div>
+                    </div>
+                    
+                    {/* Category Products */}
+                    <div className="grid grid-cols-3 gap-6">
+                      {printGroups.grouped[cat].map(product => (
+                        <ProductCard 
+                          key={product.id} 
+                          product={product} 
+                          onInquire={() => {}}
+                          onAdd={() => {}}
+                          onImageClick={() => {}}
+                          isInCart={false}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Quote List Bar - Hidden for this catalogue */}
       {/*
