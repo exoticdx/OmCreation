@@ -43,6 +43,8 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
 
   const [activeTab, setActiveTab] = useState<'products' | 'bulk' | 'settings'>('products');
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [generatedUrls, setGeneratedUrls] = useState<{name: string, url: string}[]>([]);
+  const [isGeneratingUrls, setIsGeneratingUrls] = useState(false);
 
   const handleLogout = async () => {
     await logoutAdmin();
@@ -50,6 +52,42 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
     router.push('/omcreationloginpafe2021222324');
   };
 
+  const handleGenerateUrls = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsGeneratingUrls(true);
+    const t = toast.loading(`Generating URLs for ${files.length} image(s)...`);
+    
+    try {
+      const newUrls: {name: string, url: string}[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const { getUploadUrl } = await import('@/app/actions');
+        const res = await getUploadUrl(file.name, file.type);
+        
+        if (res.success && res.uploadUrl && res.finalUrl) {
+          const uploadRes = await fetch(res.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          });
+          
+          if (uploadRes.ok) {
+            newUrls.push({ name: file.name, url: res.finalUrl });
+          }
+        }
+      }
+      
+      setGeneratedUrls(prev => [...prev, ...newUrls]);
+      toast.success(`Generated ${newUrls.length} URL(s)!`, { id: t });
+    } catch (err: any) {
+      toast.error(err.message, { id: t });
+    } finally {
+      setIsGeneratingUrls(false);
+      if (e.target) e.target.value = '';
+    }
+  };
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
