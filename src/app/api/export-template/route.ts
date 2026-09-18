@@ -13,12 +13,12 @@ export async function GET() {
 
     // Define columns
     const columns = [
-      { header: 'Title', key: 'title', width: 25 },
-      { header: 'SKU', key: 'sku', width: 15 },
-      { header: 'Category', key: 'category', width: 20 },
+      { header: 'Title*', key: 'title', width: 25 },
+      { header: 'SKU*', key: 'sku', width: 15 },
+      { header: 'Category*', key: 'category', width: 20 },
       { header: 'Price', key: 'price', width: 10 },
       { header: 'Description', key: 'description', width: 30 },
-      { header: 'Image URL 1', key: 'image_url_1', width: 40 },
+      { header: 'Image URL 1*', key: 'image_url_1', width: 40 },
       { header: 'Image URL 2', key: 'image_url_2', width: 40 },
       { header: 'Image URL 3', key: 'image_url_3', width: 40 },
       { header: 'Image URL 4', key: 'image_url_4', width: 40 },

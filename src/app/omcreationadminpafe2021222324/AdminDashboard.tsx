@@ -324,7 +324,7 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
 
       const headers: Record<number, string> = {};
       worksheet.getRow(1).eachCell((cell, colNumber) => {
-        headers[colNumber] = cell.value?.toString().trim() || '';
+        headers[colNumber] = cell.value?.toString().replace(/\*/g, '').trim() || '';
       });
 
       const items: any[] = [];
