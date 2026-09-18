@@ -219,13 +219,13 @@ export async function getUploadUrl(fileName: string, fileType: string) {
     throw new Error('R2 missing');
   }
   const fileExt = fileName.split('.').pop() || 'jpg';
-  const newFileName = "product_$(Math.random().toString(36).substring(2, 15))_$(Date.now()).$(fileExt)";
+  const newFileName = `product_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: newFileName,
     ContentType: fileType,
   });
   const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 });
-  const finalUrl = "$(publicDomain.replace(/\/$/, ''))/$(newFileName)";
+  const finalUrl = `${publicDomain.replace(/\/$/, '')}/${newFileName}`;
   return { success: true, uploadUrl, finalUrl };
 }
