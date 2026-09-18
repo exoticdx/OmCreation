@@ -69,7 +69,6 @@ export async function GET() {
           const colLetter = dropdownSheet.getColumn(dropdownColIndex).letter;
           const range = `DropdownLists!$${colLetter}$1:$${colLetter}$${options.length}`;
           
-          // Column index in main sheet: 10 fixed cols + index + 1
           const mainSheetCol = sheet.getColumn(10 + index + 1).letter;
           
           for (let i = 2; i <= 1000; i++) {
@@ -83,6 +82,19 @@ export async function GET() {
             };
           }
           dropdownColIndex++;
+        }
+      } else if (field.type === 'boolean') {
+        const mainSheetCol = sheet.getColumn(10 + index + 1).letter;
+        for (let i = 2; i <= 1000; i++) {
+          sheet.getCell(`${mainSheetCol}${i}`).dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"Yes,No"'],
+            showErrorMessage: true,
+            errorTitle: 'Invalid Input',
+            error: 'Please select Yes or No.'
+          };
+          // Default to Yes for boolean fields like "In Stock" if they wish, but blank is fine.
         }
       }
     });
