@@ -50,23 +50,33 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
     router.push('/omcreationloginpafe2021222324');
   };
 
-  const handleSingleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
     setIsUploadingImage(true);
-    const t = toast.loading('Uploading image...');
+    const t = toast.loading(`Uploading ${files.length} image(s)...`);
     
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await uploadImageToR2(formData);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await uploadImageToR2(formData);
+        
+        if (res.success && res.url) {
+          uploadedUrls.push(res.url);
+        } else {
+          toast.error(`Failed to upload ${file.name}: ${res.error}`);
+        }
+      }
       
-      if (res.success && res.url) {
-        setImageUrls(prev => [...prev, res.url!]);
-        toast.success('Image uploaded!', { id: t });
+      if (uploadedUrls.length > 0) {
+        setImageUrls(prev => [...prev, ...uploadedUrls]);
+        toast.success(`Successfully uploaded ${uploadedUrls.length} image(s)!`, { id: t });
       } else {
-        throw new Error(res.error || 'Upload failed');
+        toast.error('Failed to upload any images.', { id: t });
       }
     } catch (err: any) {
       toast.error(err.message, { id: t });
@@ -563,7 +573,7 @@ export default function AdminDashboard({ categories, products, fieldOptions = []
                         <span className="text-[10px] text-neutral-500 font-medium">Add Image</span>
                       </>
                     )}
-                    <input type="file" accept="image/*" onChange={handleSingleImageUpload} className="hidden" disabled={isUploadingImage} />
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" multiple disabled={isUploadingImage} />
                   </label>
                 </div>
               </div>
